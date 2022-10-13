@@ -11,7 +11,6 @@
 #include <printf.h>
 #include <stdio.h>
 
-
 //===========
 
 // Wireless Set Up
@@ -31,11 +30,14 @@ char dataToSend[32];
 #define HALL2_PIN   A1
 int hall1;
 int hall2;
+unsigned long readTime;
+unsigned long prevReadTime = 0;
+int readDiff;
 
 // Timing Set Up
 unsigned long currentMicros;
 unsigned long prevMicros = 0;
-int diffMicros;
+int txWaitTime = 5000;
 
 //===========
 
@@ -48,7 +50,7 @@ void setup() {
     // Start up the radio obeject
     radio.begin();                          // Begin the radio
     radio.setDataRate( RF24_2MBPS );        // Set the data rate (RF24_250KBPS, RF24_1MBPS, RF24_2MBPS)
-    radio.setRetries(0,1);                  // Delay (multiples of 250us - (n+1)*250), Count (amount of retries)
+    radio.setRetries(1,4);                  // Delay (multiples of 250us - (n+1)*250), Count (amount of retries)
     radio.openWritingPipe(slaveAddress);    // Opens a pipe to write to
     radio.printDetails();                   // Allows you to check connection from board to chip is ok
 }
@@ -56,9 +58,14 @@ void setup() {
 //====================
 
 void loop() {
-    readHall();
-    updateData();
-    send();
+    currentMicros = micros();    
+    
+    if(currentMicros-prevMicros>txWaitTime) {
+        readHall();
+        updateData();
+        send();
+        prevMicros = currentMicros;      
+    }
 }
 
 //====================
@@ -94,7 +101,7 @@ void send() {
 // Outputs: NULL
 void sendQuick() {
     // Send the message and check it was received
-    radio.write( &dataToSend, sizeof(dataToSend) );  // Used to ensure data is received at the other end
+    radio.write(&dataToSend, sizeof(dataToSend));  // Used to ensure data is received at the other end
         // Always use sizeof() as it gives the size as the number of bytes.
         // For example if dataToSend was an int sizeof() would correctly return 2
 }
@@ -105,18 +112,18 @@ void sendQuick() {
 // Inputs:  NULL
 // Outputs: NULL
 void updateData() {
-    snprintf(dataToSend, sizeof(dataToSend), "%d,%d,%d", diffMicros, hall1, hall2);
+    snprintf(dataToSend, sizeof(dataToSend), "%d,%d,%d", readDiff, hall1, hall2);
 }
 
 //====================
 
-// Reads the Hall effect sensors and sets the time of the read
+// Reads the Hall effect sensors
 // Inputs:  NULL
 // Outputs: NULL
 void readHall() {
-    currentMicros = micros();
+    readTime = micros();
     hall1 = analogRead(HALL1_PIN);
     hall2 = analogRead(HALL2_PIN);
-    diffMicros = currentMicros - prevMicros;
-    prevMicros = currentMicros;
+    readDiff = readTime - prevReadTime;
+    prevReadTime = readTime;
 }

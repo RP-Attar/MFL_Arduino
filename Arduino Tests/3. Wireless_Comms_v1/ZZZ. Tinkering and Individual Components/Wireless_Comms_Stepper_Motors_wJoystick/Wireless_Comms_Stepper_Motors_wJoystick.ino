@@ -33,19 +33,42 @@ void setup()
 void loop() 
 {
     readJoy();
-    moveMotors();
+    moveA();
+    idleA();
+    moveB();
+    idleB();
 }
 
 void readJoy() {
     joyxValue = analogRead(JOYX_PIN);
 }
 
-void moveMotors() {
+void moveA() {
     if (joyxValue > 525) {
         stepperA.step(stepsPerMove);
-        stepperB.step(stepsPerMove);
     } else if (joyxValue < 510) {
         stepperA.step(-stepsPerMove);
-        stepperB.step(-stepsPerMove);      
     }
 }
+
+void moveB() {
+    if (joyxValue > 525) {
+        stepperB.step(stepsPerMove);
+    } else if (joyxValue < 510) {
+        stepperB.step(-stepsPerMove);  
+    }
+}
+
+void idleA() {
+  digitalWrite(30, LOW);
+  digitalWrite(32, LOW);
+  digitalWrite(34, LOW);
+  digitalWrite(36, LOW);
+}
+
+void idleB() {
+  digitalWrite(31, LOW);
+  digitalWrite(33, LOW);
+  digitalWrite(35, LOW);
+  digitalWrite(37, LOW); 
+} 

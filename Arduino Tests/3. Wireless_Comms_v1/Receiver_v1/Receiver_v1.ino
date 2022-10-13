@@ -80,7 +80,10 @@ void loop() {
     getData();
     showData();
     readJoy();
-    moveMotors();
+    moveA();
+    //idleA();
+    moveB();
+    //idleB();
 }
 
 //==============
@@ -141,15 +144,51 @@ void readJoy() {
 
 //==============
 
-// Moves the motors by 2 steps each time it is called when the joystick is moved from centre value 
+// Moves motor A by stepsPerMove steps each time it is called when the joystick is moved from centre value 
 // Inputs:  NULL
 // Outputs: NULL
-void moveMotors() {
+void moveA() {
     if (joyxValue > 525) {
         stepperA.step(stepsPerMove);
+    } else if (joyxValue < 510) {
+        stepperA.step(-stepsPerMove);     
+    }
+}
+
+//==============
+
+// Moves motor B by stepsPerMove steps each time it is called when the joystick is moved from centre value 
+// Inputs:  NULL
+// Outputs: NULL
+void moveB() {
+    if (joyxValue > 525) {
         stepperB.step(stepsPerMove);
     } else if (joyxValue < 510) {
-        stepperA.step(-stepsPerMove);
         stepperB.step(-stepsPerMove);      
     }
 }
+
+//==============
+
+// Sets all stepper motor A pins to low when not in use 
+// Inputs:  NULL
+// Outputs: NULL
+void idleA() {
+  digitalWrite(AIN1_PIN, LOW);
+  digitalWrite(AIN2_PIN, LOW);
+  digitalWrite(AIN3_PIN, LOW);
+  digitalWrite(AIN4_PIN, LOW);
+}
+
+//==============
+
+// Sets all stepper motor B pins to low when not in use 
+// Inputs:  NULL
+// Outputs: NULL
+
+void idleB() {
+  digitalWrite(BIN1_PIN, LOW);
+  digitalWrite(BIN2_PIN, LOW);
+  digitalWrite(BIN3_PIN, LOW);
+  digitalWrite(BIN4_PIN, LOW); 
+} 
