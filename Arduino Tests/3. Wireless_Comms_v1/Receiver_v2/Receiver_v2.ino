@@ -14,12 +14,12 @@
 // Wireless Set Up
 #define CE_PIN  39    // nRF24
 #define CSN_PIN 41    // nRF24
+#define IRQ_PIN 3     // nRF24 - interrupt pin
 // Set the address we are sending info to
 const byte thisSlaveAddress[5] = {'R','x','A','A','A'};
 // Create a Radio object and variables for receiving 
 RF24 radio(CE_PIN, CSN_PIN);
 char dataReceived[32]; // This must match dataToSend in the TX
-bool newData = false;
 
 //===========
 
@@ -62,12 +62,15 @@ void setup() {
     pinMode(REC_PIN, INPUT);
     attachInterrupt(digitalPinToInterrupt(REC_PIN), recData, CHANGE);
 
-    // Start up the radio obeject 
+    // Start up the radio obeject and IRQ pin interrupt 
     radio.begin();                                  // Begin the radio
     radio.setDataRate( RF24_2MBPS );                // Set the data rate (RF24_250KBPS, RF24_1MBPS, RF24_2MBPS)
     radio.openReadingPipe(1, thisSlaveAddress);     // Opens a pipe to read from 
     radio.startListening();                         // Begin listening for messages
-
+    radio.maskIRQ(1, 1, 0);                         // Means that only "data received" will trigger interrupt on falling edge
+    pinMode(IRQ_PIN, INPUT);
+    attachInterrupt(digitalPinToInterrupt(IRQ_PIN), getData, FALLING);
+    
     // Start up the stepper motors at X RPM
     stepperA.setSpeed(80);
     stepperB.setSpeed(80);
@@ -77,8 +80,6 @@ void setup() {
 
 // Runs forever
 void loop() {
-    getData();
-    showData();
     readJoy();
     moveA();
     idleA();
@@ -88,25 +89,15 @@ void loop() {
 
 //==============
 
-// Checks if there is data being sent, stores it, and sets newData flag to true
+// Triggered by ISR interrupt on radio transmitter of receiver to show successfully received data
 // Inputs:  NULL
 // Outputs: NULL
 void getData() {
+    bool tx_ds, tx_df, rx_dr;
+    radio.whatHappened(tx_ds, tx_df, rx_dr); // resets the IRQ pin to HIGH (to make .available reliable)
     if (radio.available()) {
         radio.read(&dataReceived, sizeof(dataReceived));
-        newData = true;
-    }
-}
-
-//==============
-
-// Checks if there is new data, shows it, and sets newData flag to true
-// Inputs:  NULL
-// Outputs: NULL
-void showData() {
-    if (newData == true) {
         Serial.println(dataReceived);
-        newData = false;
     }
 }
 

@@ -1,7 +1,6 @@
 // The master (or the transmitter)
 // Should be loaded onto the Arduino UNO
 
-
 //===========
 
 // Libraries to include
