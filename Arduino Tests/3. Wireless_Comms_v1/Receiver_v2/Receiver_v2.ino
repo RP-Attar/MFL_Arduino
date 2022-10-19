@@ -60,7 +60,6 @@ void setup() {
 
     // Start up the recording button interrupt
     pinMode(REC_PIN, INPUT);
-    attachInterrupt(digitalPinToInterrupt(REC_PIN), recData, CHANGE);
 
     // Start up the radio obeject and IRQ pin interrupt 
     radio.begin();                                  // Begin the radio
@@ -80,6 +79,7 @@ void setup() {
 
 // Runs forever
 void loop() {
+    recData();
     readJoy();
     moveA();
     idleA();

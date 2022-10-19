@@ -33,6 +33,8 @@ unsigned long readTime;
 unsigned long prevReadTime = 0;
 int readDiff;
 
+//===========
+
 // Timing Set Up
 unsigned long currentMicros;
 unsigned long prevMicros = 0;

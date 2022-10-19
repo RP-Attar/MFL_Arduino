@@ -23,8 +23,8 @@ int joyxValue;
 void setup()
 {
   // Set the speed at 60 rpm:
-  stepperA.setSpeed(80);
-  stepperB.setSpeed(80);
+  stepperA.setSpeed(40);
+  stepperB.setSpeed(40);
   
   // Initialize the serial port:
   Serial.begin(9600);

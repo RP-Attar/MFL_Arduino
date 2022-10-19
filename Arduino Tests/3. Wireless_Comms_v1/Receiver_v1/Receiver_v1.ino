@@ -81,9 +81,9 @@ void loop() {
     showData();
     readJoy();
     moveA();
-    idleA();
+    //idleA();
     moveB();
-    idleB();
+    //idleB();
 }
 
 //==============
