@@ -1,6 +1,6 @@
 Wireless_Comms_v1
 
-Purpose: Transmit Hall Effect Sensor Data wirelessly, and wire data to a text file
+Purpose: Transmit Hall Effect Sensor Data wirelessly, and write data to a text file
 
 Files:
 - Transmitter_v1 (.ino): to be uploaded to the Arduino Uno (reads Hall Effect Sensors, sends values between 0 - 1024)

@@ -33,7 +33,7 @@ bool newData = false;
 #define BIN3_PIN    34
 #define BIN4_PIN    36
 const int stepsPerRevolution = 200;
-const int stepsPerMove = 1;
+const int stepsPerMove = 1; 
 // Create Instance of Stepper library
 Stepper stepperA(stepsPerRevolution, AIN1_PIN, AIN2_PIN, AIN3_PIN, AIN4_PIN);
 Stepper stepperB(stepsPerRevolution, BIN1_PIN, BIN2_PIN, BIN3_PIN, BIN4_PIN);

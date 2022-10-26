@@ -9,6 +9,8 @@
 #include <RF24.h>
 #include <printf.h>
 #include <stdio.h>
+#include <Wire.h>
+#include <Adafruit_ADS1X15.h>
 
 //===========
 
@@ -24,9 +26,11 @@ char dataToSend[32];
 
 //===========
 
-// Hall Set Up
-#define HALL1_PIN   A0
-#define HALL2_PIN   A1
+// ADC/Hall Set Up
+#define ADC_SCL   A5
+#define ADC_SDA   A4
+Adafruit_ADS1115 ads;               // Use this for the 16-bit version
+const float multiplier = 0.1875F;
 int hall1;
 int hall2;
 unsigned long readTime;
@@ -38,7 +42,7 @@ int readDiff;
 // Timing Set Up
 unsigned long currentMicros;
 unsigned long prevMicros = 0;
-int txWaitTime = 2000;
+int txWaitTime = 1000;
 
 //===========
 
@@ -54,6 +58,19 @@ void setup() {
     radio.setRetries(1,4);                  // Delay (multiples of 250us - (n+1)*250), Count (amount of retries)
     radio.openWritingPipe(slaveAddress);    // Opens a pipe to write to
     radio.printDetails();                   // Allows you to check connection from board to chip is ok
+
+    // Start up the ADC
+    ads.setDataRate(RATE_ADS1115_860SPS);
+    ads.setGain(GAIN_TWOTHIRDS);      //+/- 6.144V  1 bit = 0.1875mV (default)
+    // ads.setGain(GAIN_ONE);         //+/- 4.096V  1 bit = 0.125mV
+    // ads.setGain(GAIN_TWO);         //+/- 2.048V  1 bit = 0.0625mV
+    // ads.setGain(GAIN_FOUR);        //+/- 1.024V  1 bit = 0.03125mV
+    // ads.setGain(GAIN_EIGHT);       //+/- 0.512V  1 bit = 0.015625mV
+    // ads.setGain(GAIN_SIXTEEN);     //+/- 0.256V  1 bit = 0.0078125mV 
+    if (!ads.begin()) {
+      Serial.println("Failed to initialize ADS.");
+      while (1);
+    }
 }
 
 //====================
@@ -123,8 +140,8 @@ void updateData() {
 // Outputs: NULL
 void readHall() {
     readTime = micros();
-    hall1 = analogRead(HALL1_PIN);
-    hall2 = analogRead(HALL2_PIN);
+    hall1 = ads.readADC_SingleEnded(0);
+    hall2 = ads.readADC_SingleEnded(1);
     readDiff = readTime - prevReadTime;
     prevReadTime = readTime;
 }

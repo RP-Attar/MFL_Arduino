@@ -1,5 +1,6 @@
 // The slave (or the receiver)
 // Should be loaded onto the Arduino MEGA
+// Ensure string is tight before pressing record, otherwise measurements will be off
 
 //===========
 
@@ -34,6 +35,8 @@ char dataReceived[32]; // This must match dataToSend in the TX
 #define BIN4_PIN    36
 const int stepsPerRevolution = 200;
 const int stepsPerMove = 1;
+const int stepperSpeed = 50;
+int stepsSinceLastRead = 0;
 // Create Instance of Stepper library
 Stepper stepperA(stepsPerRevolution, AIN1_PIN, AIN2_PIN, AIN3_PIN, AIN4_PIN);
 Stepper stepperB(stepsPerRevolution, BIN1_PIN, BIN2_PIN, BIN3_PIN, BIN4_PIN);
@@ -71,8 +74,8 @@ void setup() {
     attachInterrupt(digitalPinToInterrupt(IRQ_PIN), getData, FALLING);
     
     // Start up the stepper motors at X RPM
-    stepperA.setSpeed(80);
-    stepperB.setSpeed(80);
+    stepperA.setSpeed(stepperSpeed);
+    stepperB.setSpeed(stepperSpeed);
 }
 
 //=============
@@ -82,9 +85,9 @@ void loop() {
     recData();
     readJoy();
     moveA();
-    idleA();
+    //idleA();
     moveB();
-    idleB();
+    //idleB();
 }
 
 //==============
@@ -97,7 +100,10 @@ void getData() {
     radio.whatHappened(tx_ds, tx_df, rx_dr); // resets the IRQ pin to HIGH (to make .available reliable)
     if (radio.available()) {
         radio.read(&dataReceived, sizeof(dataReceived));
+        Serial.print(stepsSinceLastRead);
+        Serial.print(",");
         Serial.println(dataReceived);
+        stepsSinceLastRead = 0;
     }
 }
 
@@ -140,9 +146,9 @@ void readJoy() {
 // Outputs: NULL
 void moveA() {
     if (joyxValue > 525) {
-        stepperA.step(stepsPerMove);
+        stepperA.step(-stepsPerMove);
     } else if (joyxValue < 510) {
-        stepperA.step(-stepsPerMove);     
+        stepperA.step(stepsPerMove);     
     }
 }
 
@@ -153,9 +159,10 @@ void moveA() {
 // Outputs: NULL
 void moveB() {
     if (joyxValue > 525) {
-        stepperB.step(stepsPerMove);
+        stepperB.step(-stepsPerMove);
+        stepsSinceLastRead = stepsSinceLastRead + stepsPerMove;
     } else if (joyxValue < 510) {
-        stepperB.step(-stepsPerMove);      
+        stepperB.step(stepsPerMove);      
     }
 }
 
