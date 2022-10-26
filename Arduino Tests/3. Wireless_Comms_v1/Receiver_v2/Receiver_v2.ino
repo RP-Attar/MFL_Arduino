@@ -65,7 +65,10 @@ void setup() {
     pinMode(REC_PIN, INPUT);
 
     // Start up the radio obeject and IRQ pin interrupt 
-    radio.begin();                                  // Begin the radio
+    if (!radio.begin()) {                   // Begin the radio
+        Serial.println(F("radio hardware not responding!"));
+        while (1) {} // hold program in infinite loop to prevent subsequent errors
+    }   
     radio.setDataRate( RF24_2MBPS );                // Set the data rate (RF24_250KBPS, RF24_1MBPS, RF24_2MBPS)
     radio.openReadingPipe(1, thisSlaveAddress);     // Opens a pipe to read from 
     radio.startListening();                         // Begin listening for messages

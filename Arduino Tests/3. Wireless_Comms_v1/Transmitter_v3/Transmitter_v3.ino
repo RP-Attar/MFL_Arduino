@@ -56,14 +56,17 @@ void setup() {
     Wire.setClock(400000);
 
     // Start up the radio obeject
-    radio.begin();                          // Begin the radio
+    if (!radio.begin()) {                   // Begin the radio
+        Serial.println(F("radio hardware not responding!"));
+        while (1) {} // hold program in infinite loop to prevent subsequent errors
+    }                          
     radio.setDataRate( RF24_2MBPS );        // Set the data rate (RF24_250KBPS, RF24_1MBPS, RF24_2MBPS)
     radio.setRetries(1,4);                  // Delay (multiples of 250us - (n+1)*250), Count (amount of retries)
     radio.openWritingPipe(slaveAddress);    // Opens a pipe to write to
     radio.printDetails();                   // Allows you to check connection from board to chip is ok
 
     // Start up the ADC
-    ads.setDataRate(RATE_ADS1115_128SPS);   // default
+    ads.setDataRate(RATE_ADS1115_860SPS);   // fastest
     ads.setGain(GAIN_TWOTHIRDS);            //+/- 6.144V  1 bit = 0.1875mV (default)
     // ads.setGain(GAIN_ONE);               //+/- 4.096V  1 bit = 0.125mV
     // ads.setGain(GAIN_TWO);               //+/- 2.048V  1 bit = 0.0625mV
@@ -84,7 +87,7 @@ void loop() {
     
     if(currentMicros-prevMicros>txWaitTime) {
         getMsg();
-        send();
+        sendQuick();
         prevMicros = currentMicros;      
     }
 }
