@@ -12,11 +12,11 @@ motor_step = 1.8;           % degrees - motor angle change per step
 motor_lengthPerStep = (motor_step/360)*(2*3.14*motor_radius);
 
 %% Load data from file being looked at
-file_path = "C:\Users\Nicholas Lamanna\Desktop\MFL Code\Arduino Tests\3. Wireless_Comms_v1\Test Data\Test 6 _ ADC1115\file_1.txt";
+file_path = "C:\Users\Nicholas Lamanna\Desktop\MFL Code\Arduino Tests\3. Wireless_Comms_v1\Test Data\Test 6 _ ADC1115\file_7 - noMag.txt";
 data = table2array(readtable(file_path));
 
 %% Extract useful info from loaded data set
-start = 360;                                        % 360 for file 1
+start = 2;                                        % 360 for file 1
 
 time_step = round(mean(data(start,2)));             % average time beween each reading
 

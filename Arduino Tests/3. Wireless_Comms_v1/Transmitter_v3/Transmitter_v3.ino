@@ -131,7 +131,7 @@ void sendQuick() {
 }
 
 //====================
-
+  
 // Reads the Hall effect sensors and creates the message
 // Inputs:  NULL
 // Outputs: NULL

@@ -8,7 +8,7 @@
 #include <SPI.h>
 #include <nRF24L01.h>
 #include <RF24.h>
-#include <Stepper.h>
+#include <AccelStepper.h>
 
 //===========
 
@@ -25,21 +25,16 @@ char dataReceived[32]; // This must match dataToSend in the TX
 //===========
 
 // Stepper motors setup
-#define AIN1_PIN    31
-#define AIN2_PIN    33
-#define AIN3_PIN    35
-#define AIN4_PIN    37
-#define BIN1_PIN    30
-#define BIN2_PIN    32
-#define BIN3_PIN    34
-#define BIN4_PIN    36
+// Motor interface type must be set to 1 when using a driver:
+#define stepPin 6
+#define dirPin 7
+#define motorInterfaceType 1
 const int stepsPerRevolution = 200;
 const int stepsPerMove = 1;
-const int stepperSpeed = 80;
+int motorSpeed = 380;
 int stepsSinceLastRead = 0;
-// Create Instance of Stepper library
-Stepper stepperA(stepsPerRevolution, AIN1_PIN, AIN2_PIN, AIN3_PIN, AIN4_PIN);
-Stepper stepperB(stepsPerRevolution, BIN1_PIN, BIN2_PIN, BIN3_PIN, BIN4_PIN);
+// Create a new instance of the AccelStepper class:
+AccelStepper stepperA = AccelStepper(motorInterfaceType, stepPin, dirPin);
 
 //===========
 
@@ -65,7 +60,7 @@ void setup() {
     pinMode(REC_PIN, INPUT);
 
     // Start up the radio obeject and IRQ pin interrupt 
-    if (!radio.begin()) {                   // Begin the radio
+    if (!radio.begin()) {                           // Begin the radio
         Serial.println(F("radio hardware not responding!"));
         while (1) {} // hold program in infinite loop to prevent subsequent errors
     }   
@@ -77,8 +72,7 @@ void setup() {
     attachInterrupt(digitalPinToInterrupt(IRQ_PIN), getData, FALLING);
     
     // Start up the stepper motors at X RPM
-    stepperA.setSpeed(stepperSpeed);
-    stepperB.setSpeed(stepperSpeed);
+    stepperA.setMaxSpeed(1000);                     // Set the maximum speed in steps per second
 }
 
 //=============
@@ -87,10 +81,7 @@ void setup() {
 void loop() {
     recData();
     readJoy();
-    moveA();
-    //idleA();
-    moveB();
-    //idleB();
+    motors();
 }
 
 //==============
@@ -144,52 +135,28 @@ void readJoy() {
 
 //==============
 
-// Moves motor A by stepsPerMove steps each time it is called when the joystick is moved from centre value 
+// Chooses the direction to move motors in when the joystick is moved from centre value 
 // Inputs:  NULL
 // Outputs: NULL
-void moveA() {
+void motors() {
     if (joyxValue > 525) {
-        stepperA.step(-stepsPerMove);
+        moveMotors(-motorSpeed, -stepsPerMove);
     } else if (joyxValue < 510) {
-        stepperA.step(stepsPerMove);     
+        moveMotors(motorSpeed, stepsPerMove);
     }
 }
 
 //==============
 
-// Moves motor B by stepsPerMove steps each time it is called when the joystick is moved from centre value 
+// Moves motors by motorSpeed steps/sec by stepsPerMove steps each time it is called
 // Inputs:  NULL
 // Outputs: NULL
-void moveB() {
-    if (joyxValue > 525) {
-        stepperB.step(-stepsPerMove);
-        stepsSinceLastRead = stepsSinceLastRead + stepsPerMove;
-    } else if (joyxValue < 510) {
-        stepperB.step(stepsPerMove);      
-    }
+void moveMotors(int stepRate, int stepNum) {
+    stepperA.setCurrentPosition(0);      // Set the current position to 0
+    stepperA.setSpeed(stepRate);
+    while(stepperA.currentPosition() != stepNum)
+        {
+          stepperA.runSpeed();
+        }  
+    stepsSinceLastRead = stepsSinceLastRead + 1;
 }
-
-//==============
-
-// Sets all stepper motor A pins to low when not in use 
-// Inputs:  NULL
-// Outputs: NULL
-void idleA() {
-  digitalWrite(AIN1_PIN, LOW);
-  digitalWrite(AIN2_PIN, LOW);
-  digitalWrite(AIN3_PIN, LOW);
-  digitalWrite(AIN4_PIN, LOW);
-}
-
-//==============
-
-// Sets all stepper motor B pins to low when not in use 
-// Inputs:  NULL
-// Outputs: NULL
-
-void idleB() {
-  digitalWrite(BIN1_PIN, LOW);
-  digitalWrite(BIN2_PIN, LOW);
-  digitalWrite(BIN3_PIN, LOW);
-  digitalWrite(BIN4_PIN, LOW); 
-} 
