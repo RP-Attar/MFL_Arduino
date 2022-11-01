@@ -1,4 +1,5 @@
-clear all; close all; clc;
+% clear all; 
+close all; clc;
 
 %% 7th round testing 
 
@@ -13,11 +14,11 @@ motor_lengthPerStep = (motor_step/360)*(2*3.14*motor_radius);
 
 %% Creating list of file names
 fileNames = [
-        "file_1_good.txt", ...
-        "file_2_good.txt", ...
-        "file_3_good.txt", ...
-        "file_4_good.txt", ...
-        "file_5_good.txt"
+        "file_1_bad.txt", ...
+        "file_2_bad.txt", ...
+        "file_3_bad.txt", ...
+        "file_4_bad.txt", ...
+        "file_5_bad.txt"
 ];
 
 %% Load data from files
@@ -49,7 +50,8 @@ cropLength = 1800;
 croppedData = zeros(cropLength+1,4,length(fileNames));
 for i = 1:length(fileNames)
         subplot(2,3,i)
-        [maxVal,maxLoc] = max(data(:,3,i));
+        %[maxVal,maxLoc] = max(data(:,3,i));
+        maxLoc = 1;
         croppedData(:,:,i) = data(maxLoc:maxLoc+cropLength,:,i);
         croppedData(:,3,i) = croppedData(:,3,i) - mean(croppedData(:,3,i));             % centering around 0
         croppedData(:,4,i) = (croppedData(:,4,i) - mean(croppedData(:,4,i)))*-1;        % centering around 0 and flipping
@@ -60,7 +62,7 @@ for i = 1:length(fileNames)
         legend("hall 1 - top", "hall 2 - bottom")
 end
 
-% AVerage of all signals
+% Average of all signals
 hall_1 = mean(croppedData(:,3,:), [2,3]);
 hall_2 = mean(croppedData(:,4,:), [2,3]);
 
