@@ -88,7 +88,7 @@ void loop() {
     
     if(currentMicros-prevMicros>txWaitTime) {
         getMsg();
-        sendQuick();
+        send();
         prevMicros = currentMicros;      
     }
 }

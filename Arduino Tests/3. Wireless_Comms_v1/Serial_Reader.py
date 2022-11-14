@@ -1,7 +1,7 @@
 import serial
 
 def writeToFile(filename):
-    filename = filename + "_bad" + ".txt"    # create full file name
+    filename = filename + "_Tgood_Bbad" + ".txt"    # create full file name
     f = open(filename, 'a')         # create new file to write to
     while True:
         cc = str(ser.readline())    # gets the string from the COM port
