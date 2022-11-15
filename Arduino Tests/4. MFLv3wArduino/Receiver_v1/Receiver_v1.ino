@@ -31,7 +31,7 @@ char surpriseMsg[15] = "Hello";
 
 void setup() {
     // Start up serial monitor 
-    Serial.begin(9600);
+    Serial.begin(2000000);
 
     // Start up the radio obeject
     Serial.println("SimpleRx Starting");

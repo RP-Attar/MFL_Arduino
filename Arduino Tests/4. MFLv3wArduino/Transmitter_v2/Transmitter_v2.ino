@@ -5,6 +5,8 @@
 #include <SPI.h>
 #include <nRF24L01.h>
 #include <RF24.h>
+#include <Wire.h>
+#include <Adafruit_ADS1X15.h>
 
 
 //===========
@@ -23,11 +25,19 @@ struct Data_Package {                             // Max size of this struct is 
 };
 
 bool newDataSend = false;                         // True when there is new data to send
-bool newDataReceived = false;                          // True when there is new data received
+bool newDataReceived = false;                     // True when there is new data received
 
 RF24 radio(CE_PIN, CSN_PIN);
 Data_Package data;
 char surpriseMsg[15] = "test";
+
+//===========
+// ADC/Hall Set Up
+#define ADC_SCL   21
+#define ADC_SDA   20
+Adafruit_ADS1115 ads;                             // Use this for the 16-bit version
+unsigned long readTime;
+unsigned long prevReadTime = 0;
 
 //===========
 // Timing set up
@@ -39,7 +49,7 @@ unsigned long txIntervalMillis = 1000; // send once per second
 
 void setup() {
     // Start up serial monitor 
-    Serial.begin(9600);
+    Serial.begin(2000000);
 
     // Start up the radio obeject
     Serial.println("SimpleRx Starting");
@@ -55,6 +65,14 @@ void setup() {
     pinMode(IRQ_PIN, INPUT);
     attachInterrupt(digitalPinToInterrupt(IRQ_PIN), getData, FALLING);
     //radio.printDetails();  
+
+    // Start up the ADC
+    ads.setDataRate(RATE_ADS1115_860SPS);   // fastest
+    ads.setGain(GAIN_TWOTHIRDS);            //+/- 6.144V  1 bit = 0.1875mV (default)
+    if (!ads.begin()) {
+      Serial.println("Failed to initialize ADS.");
+      while (1);
+    }
 }
 
 //=============
@@ -75,11 +93,13 @@ void loop() {
 // Makes the message that will be sent using 'sendData()'
 // 'data' is a global struct
 void makeData() {
-    data.comp1 = random(1000);
-    data.comp2 = random(1000);
-    data.timeDiff = random(1000);
-    data.stepDiff = random(1000);
+    readTime = micros();
+    data.comp1 = ads.readADC_Differential_0_1();
+    data.comp2 = random(32000);//ads.readADC_Differential_2_3();;
+    data.timeDiff = readTime - prevReadTime;
+    data.stepDiff = random(5);
     newDataSend = true;
+    prevReadTime = readTime;
 }
 
 //==============
@@ -114,7 +134,7 @@ void sendDataFast() {
 // Gets the incoming data, when the IRQ pin is triggered (hence the interrupt)
 // 'data' is a global struct
 void getData() {
-    if ( radio.available() ) {
+    if (radio.available()) {
       newDataReceived = true;
     }
 }
