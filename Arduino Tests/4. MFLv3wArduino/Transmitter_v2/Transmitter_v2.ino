@@ -1,4 +1,4 @@
-// SimpleRx - the slave or the receiver
+// Tx - the master
 
 //=========== 
 // Libraries to include
@@ -7,7 +7,7 @@
 #include <RF24.h>
 #include <Wire.h>
 #include <Adafruit_ADS1X15.h>
-
+#include <AccelStepper.h>
 
 //===========
 // Wireless Comms Setup
@@ -17,19 +17,25 @@
 
 const byte addresses[][6] = {"00001", "00002"};   // Addresses for write/read
 
-struct Data_Package {                             // Max size of this struct is 32 bytes - NRF24L01 buffer limit
+struct Hall_Data {                                // Max size of this struct is 32 bytes - NRF24L01 buffer limit
   int comp1 = 1024;
   int comp2 = 1000;
   int timeDiff = 2000;
   int stepDiff = 2;
 };
 
+struct Instructions {                             // Max size of this struct is 32 bytes - NRF24L01 buffer limit
+  char dir = 'L';
+  bool rec = false;
+  bool clippedOn = false;
+};
+
 bool newDataSend = false;                         // True when there is new data to send
 bool newDataReceived = false;                     // True when there is new data received
 
 RF24 radio(CE_PIN, CSN_PIN);
-Data_Package data;
-char surpriseMsg[15] = "test";
+Hall_Data hallData;
+Instructions surpriseMsg;
 
 //===========
 // ADC/Hall Set Up
@@ -94,10 +100,10 @@ void loop() {
 // 'data' is a global struct
 void makeData() {
     readTime = micros();
-    data.comp1 = ads.readADC_Differential_0_1();
-    data.comp2 = random(32000);//ads.readADC_Differential_2_3();;
-    data.timeDiff = readTime - prevReadTime;
-    data.stepDiff = random(5);
+    hallData.comp1 = ads.readADC_Differential_0_1();
+    hallData.comp2 = random(32000);//ads.readADC_Differential_2_3();;
+    hallData.timeDiff = readTime - prevReadTime;
+    hallData.stepDiff = random(5);
     newDataSend = true;
     prevReadTime = readTime;
 }
@@ -107,16 +113,16 @@ void makeData() {
 // 'data' is a global struct
 void sendDataSlow() {
     if (newDataSend == true) {
-      radio.write(&data, sizeof(Data_Package));
+      radio.write(&hallData, sizeof(Hall_Data));
       Serial.println("Data sent: ");
       Serial.print("comp1: ");
-      Serial.println(data.comp1);
+      Serial.println(hallData.comp1);
       Serial.print("comp2: ");
-      Serial.println(data.comp2);
+      Serial.println(hallData.comp2);
       Serial.print("timeDiff: ");
-      Serial.println(data.timeDiff);
+      Serial.println(hallData.timeDiff);
       Serial.print("stepDiff: ");
-      Serial.println(data.stepDiff);
+      Serial.println(hallData.stepDiff);
       Serial.println();
     }
 }
@@ -126,7 +132,7 @@ void sendDataSlow() {
 // 'data' is a global struct
 void sendDataFast() {
     if (newDataSend == true) {
-      radio.write(&data, sizeof(Data_Package));
+      radio.write(&hallData, sizeof(Hall_Data));
     }
 }
 
@@ -140,12 +146,21 @@ void getData() {
 }
 
 //==============
-// shows the obtained data, if the interupt was triggered since the last display
+// Shows the obtained data, if the interupt was triggered since the last display
 // 'surpriseMsg' is a global variable
 void showData() {
     if (newDataReceived == true) {
-        radio.read(&surpriseMsg, sizeof(surpriseMsg)); // Read the whole data and store it into the 'surpriseMsg' variable;
-        Serial.println(surpriseMsg);
+        if ( radio.available() ) {
+            radio.read(&surpriseMsg, sizeof(Instructions)); // Read the data and store it into the 'surpriseMsg' structure;
+        }
+        Serial.println("Data received: ");
+        Serial.print("direction: ");
+        Serial.println(surpriseMsg.dir);
+        Serial.print("record: ");
+        Serial.println(surpriseMsg.rec);
+        Serial.print("collector ring closed: ");
+        Serial.println(surpriseMsg.clippedOn);
+        Serial.println();
         newDataReceived = false;
     }
 }

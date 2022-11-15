@@ -1,11 +1,10 @@
-// SimpleRx - the slave or the receiver
+// Rx - the slave or the receiver
 
 //=========== 
 // Libraries to include
 #include <SPI.h>
 #include <nRF24L01.h>
 #include <RF24.h>
-
 
 //===========
 // Wireless Comms Setup
@@ -14,18 +13,25 @@
 
 const byte addresses[][6] = {"00001", "00002"};   // Addresses for read/write
 
-struct Data_Package {   // Max size of this struct is 32 bytes - NRF24L01 buffer limit
+struct Hall_Data {      // Max size of this struct is 32 bytes - NRF24L01 buffer limit
   int comp1 = 1024;
   int comp2 = 1000;
   int timeDiff = 2000;
   int stepDiff = 2;
 };
 
-bool newData = false;   // True when there is new data to receive
+struct Instructions {   // Max size of this struct is 32 bytes - NRF24L01 buffer limit
+  char dir = 'L';
+  bool rec = false;
+  bool clippedOn = false;
+};
+
+bool newDataSend = false;                         // True when there is new data to send
+bool newDataReceived = false;                     // True when there is new data received
 
 RF24 radio(CE_PIN, CSN_PIN);
-Data_Package data;
-char surpriseMsg[15] = "Hello";
+Hall_Data hallData;
+Instructions surpriseMsg;
 
 //===========
 
@@ -53,6 +59,7 @@ void loop() {
     getData();
     showData();
     if (random()%14020==0){
+      makeSurprise();
       surprise();
       Serial.println("surprise sent");
     }
@@ -63,8 +70,8 @@ void loop() {
 // 'data' is a global struct
 void getData() {
     if ( radio.available() ) {
-        radio.read(&data, sizeof(Data_Package)); // Read the whole data and store it into the 'data' structure;
-        newData = true;
+        radio.read(&hallData, sizeof(Hall_Data)); // Read the data and store it into the 'hallData' structure;
+        newDataReceived = true;
     }
 }
 
@@ -72,25 +79,37 @@ void getData() {
 // Displays the 'data' struct that was updated using 'getData()'
 // 'data' is a global struct
 void showData() {
-    if (newData == true) {
+    if (newDataReceived == true) {
         Serial.println("Data received: ");
         Serial.print("comp1: ");
-        Serial.println(data.comp1);
+        Serial.println(hallData.comp1);
         Serial.print("comp2: ");
-        Serial.println(data.comp2);
+        Serial.println(hallData.comp2);
         Serial.print("timeDiff: ");
-        Serial.println(data.timeDiff);
+        Serial.println(hallData.timeDiff);
         Serial.print("stepDiff: ");
-        Serial.println(data.stepDiff);
+        Serial.println(hallData.stepDiff);
         Serial.println();
-        newData = false;
+        newDataReceived = false;
     }
+}
+
+//==============
+// Makes a surprise message when called
+void makeSurprise() {
+    surpriseMsg.dir = 'R';
+    surpriseMsg.rec = false;
+    surpriseMsg.clippedOn = true;
+    newDataSend = true;
 }
 
 //==============
 // Sends a surprise message when called
 void surprise() {
-    radio.stopListening();
-    radio.write( &surpriseMsg, sizeof(surpriseMsg) );
-    radio.startListening();
+    if (newDataSend == true) {
+      radio.stopListening();
+      radio.write(&surpriseMsg, sizeof(surpriseMsg));
+      newDataSend = false;
+      radio.startListening();
+    }
 }
