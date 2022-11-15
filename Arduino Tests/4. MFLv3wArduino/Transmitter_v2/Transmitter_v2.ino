@@ -18,10 +18,10 @@
 const byte addresses[][6] = {"00001", "00002"};   // Addresses for write/read
 
 struct Hall_Data {                                // Max size of this struct is 32 bytes - NRF24L01 buffer limit
-  int comp1 = 1024;
-  int comp2 = 1000;
-  int timeDiff = 2000;
-  int stepDiff = 2;
+  int comp1 = 0;
+  int comp2 = 0;
+  int timeDiff = 0;
+  int stepDiff = 0;
 };
 
 struct Instructions {                             // Max size of this struct is 32 bytes - NRF24L01 buffer limit
@@ -44,6 +44,28 @@ Instructions surpriseMsg;
 Adafruit_ADS1115 ads;                             // Use this for the 16-bit version
 unsigned long readTime;
 unsigned long prevReadTime = 0;
+
+//===========
+// Stepper motors setup
+// Motor interface type must be set to 1 when using a driver:
+#define stepPinA  33
+#define dirPinA   31
+#define stepPinB  32
+#define dirPinB   30
+#define motorInterfaceType 1
+
+const int stepsPerRevolution = 200;
+const int stepsPerMove = 1;
+int motorSpeed = 380;
+
+int stepsSinceLastRead = 0;
+char prevDir = 'S';
+bool prevRec = false;
+bool prevClippedOn = false;
+
+// Create a new instances of the AccelStepper class:
+AccelStepper stepperA = AccelStepper(motorInterfaceType, stepPinA, dirPinA);
+AccelStepper stepperB = AccelStepper(motorInterfaceType, stepPinB, dirPinB);
 
 //===========
 // Timing set up
@@ -69,7 +91,7 @@ void setup() {
     radio.openReadingPipe(0, addresses[1]); // Opens a pipe to read from
     radio.maskIRQ(1, 1, 0);                 // Means that only "data received" will trigger interrupt on falling edge
     pinMode(IRQ_PIN, INPUT);
-    attachInterrupt(digitalPinToInterrupt(IRQ_PIN), getData, FALLING);
+    attachInterrupt(digitalPinToInterrupt(IRQ_PIN), newData, FALLING);
     //radio.printDetails();  
 
     // Start up the ADC
@@ -79,13 +101,18 @@ void setup() {
       Serial.println("Failed to initialize ADS.");
       while (1);
     }
+
+    // Start up the stepper motors with a max RPM
+    stepperA.setMaxSpeed(800);              // Set the maximum speed in steps per second
+    stepperB.setMaxSpeed(800);
 }
 
 //=============
 
 void loop() {
     currentMillis = millis();
-    showData();
+    actData();
+    moveMotors(stepsPerRevolution, stepsPerMove);
     if (currentMillis - prevMillis >= txIntervalMillis) {
         radio.stopListening();
         makeData();
@@ -103,8 +130,9 @@ void makeData() {
     hallData.comp1 = ads.readADC_Differential_0_1();
     hallData.comp2 = random(32000);//ads.readADC_Differential_2_3();;
     hallData.timeDiff = readTime - prevReadTime;
-    hallData.stepDiff = random(5);
+    hallData.stepDiff = stepsSinceLastRead;
     newDataSend = true;
+    stepsSinceLastRead = 0;
     prevReadTime = readTime;
 }
 
@@ -137,9 +165,11 @@ void sendDataFast() {
 }
 
 //==============
-// Gets the incoming data, when the IRQ pin is triggered (hence the interrupt)
+// Sets a flag when the IRQ pin is triggered (hence the interrupt)
 // 'data' is a global struct
-void getData() {
+void newData() {
+    bool tx_ds, tx_df, rx_dr;
+    radio.whatHappened(tx_ds, tx_df, rx_dr); // resets the IRQ pin to HIGH (to make .available reliable)
     if (radio.available()) {
       newDataReceived = true;
     }
@@ -150,7 +180,7 @@ void getData() {
 // 'surpriseMsg' is a global variable
 void showData() {
     if (newDataReceived == true) {
-        if ( radio.available() ) {
+        if (radio.available()) {
             radio.read(&surpriseMsg, sizeof(Instructions)); // Read the data and store it into the 'surpriseMsg' structure;
         }
         Serial.println("Data received: ");
@@ -163,4 +193,47 @@ void showData() {
         Serial.println();
         newDataReceived = false;
     }
+}
+
+//==============
+// Acts on the obtained data, if the interupt was triggered since the last display
+// 'surpriseMsg' is a global variable
+void actData() {
+    if (newDataReceived == true) {
+        if (radio.available()) {
+            radio.read(&surpriseMsg, sizeof(Instructions)); // Read the data and store it into the 'surpriseMsg' structure;
+        }
+        if (surpriseMsg.rec != prevRec) {
+            if (surpriseMsg.rec == true) {
+              Serial.println("New File"); 
+            } else {
+              Serial.println("End File");
+            }
+        }
+        if (surpriseMsg.clippedOn != prevClippedOn){
+            // rotate servo in this section
+        }
+        newDataReceived = false;
+    }
+}
+
+//==============
+// Moves motors by motorSpeed steps/sec by stepsPerMove steps each time it is called
+void moveMotors(int stepRate, int stepNum) {
+    stepperA.setCurrentPosition(0);      // Set the current position to 0
+    stepperB.setCurrentPosition(0);      // Set the current position to 0
+
+    if (surpriseMsg.dir == 'L') {
+        stepperA.setSpeed(stepRate);
+        stepperB.setSpeed(stepRate);
+    } else if (surpriseMsg.dir == 'R') {
+        stepperA.setSpeed(-stepRate);
+        stepperB.setSpeed(-stepRate);
+    }
+    
+    while ((stepperA.currentPosition() != stepNum) && (stepperB.currentPosition() != stepNum)) {
+          stepperA.runSpeed();
+          stepperB.runSpeed();
+        }  
+    stepsSinceLastRead = stepsSinceLastRead + 1;
 }

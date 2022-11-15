@@ -97,7 +97,7 @@ void showData() {
 //==============
 // Makes a surprise message when called
 void makeSurprise() {
-    surpriseMsg.dir = 'R';
+    surpriseMsg.dir = 'S';
     surpriseMsg.rec = false;
     surpriseMsg.clippedOn = true;
     newDataSend = true;
