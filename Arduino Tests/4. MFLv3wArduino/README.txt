@@ -12,3 +12,15 @@ Transmitter sends ADC conversion data struct and recevies instructional struct
 Receiver sends instructional struct and receives ADC conversion data struct
 Transmitter can recognise and act on the various instructions it can be sent
 Receiver needs an IR or Bluetooth controller attached to it so that we can tell it what instructions to send
+
+25/11/2022 - 11:21
+Receiver_v1 and Transmitter_v2
+Two way communication works
+Transmitter sends ADC conversion data struct and recevies instructional struct 
+Receiver sends instructional struct and receives ADC conversion data struct
+Transmitter can recognise and act on the various instructions it can be sent
+Receiver has an IR remote so that we can tell it what instructions to send
+
+NEXT STEPS:
+ - "motor A" section needs to be uncommented from moveMotors()
+ - increase data rate
