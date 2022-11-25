@@ -5,6 +5,14 @@
 #include <SPI.h>
 #include <nRF24L01.h>
 #include <RF24.h>
+#include <IRremote.h>
+
+//===========
+// IR Remote Setup
+#define RECV_PIN  7
+
+IRrecv irrecv(RECV_PIN);
+decode_results results;
 
 //===========
 // Wireless Comms Setup
@@ -50,7 +58,10 @@ void setup() {
     radio.openWritingPipe(addresses[1]);    // Opens a pipe to write to
     radio.openReadingPipe(0, addresses[0]); // Opens a pipe to read from
     radio.startListening();
-    //radio.printDetails();  
+    //radio.printDetails();
+
+    // Start up the IR remote
+    irrecv.enableIRIn(); // Start the receiver
 }
 
 //=============
@@ -58,8 +69,9 @@ void setup() {
 void loop() {
     getData();
     showData();
-    if (random()%14020==0){
-      makeSurprise();
+    if (irrecv.decode(&results)) {
+      makeSurprise(&results);
+      irrecv.resume();                // Receive the next value
       surprise();
       Serial.println("surprise sent");
     }
@@ -96,11 +108,33 @@ void showData() {
 
 //==============
 // Makes a surprise message when called
-void makeSurprise() {
-    surpriseMsg.dir = 'S';
-    surpriseMsg.rec = false;
-    surpriseMsg.clippedOn = true;
+void makeSurprise(decode_results *results) {
+    //surpriseMsg.rec = false;
+    //surpriseMsg.clippedOn = true;
     newDataSend = true;
+    switch (results->value) {
+      case 1386468383:    // Prev btn
+        surpriseMsg.dir = 'L';
+        break;
+      case 3622325019:    // Next btn
+        surpriseMsg.dir = 'R';
+        break;
+      case 553536955:     // Pause/Play btn
+        surpriseMsg.dir = 'S';
+        break;
+      case 4034314555:    // Vol -
+        surpriseMsg.clippedOn = false;
+        break;  
+      case 2747854299:    // Vol +
+        surpriseMsg.clippedOn = true;
+        break;     
+      case 2534850111:    // 1
+        surpriseMsg.rec = false;
+        break;  
+      case 1635910171:    // 3
+        surpriseMsg.rec = true;
+        break;            
+    }
 }
 
 //==============

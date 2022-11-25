@@ -25,7 +25,7 @@ struct Hall_Data {                                // Max size of this struct is 
 };
 
 struct Instructions {                             // Max size of this struct is 32 bytes - NRF24L01 buffer limit
-  char dir = 'L';
+  char dir = 'S';
   bool rec = false;
   bool clippedOn = false;
 };
@@ -209,9 +209,16 @@ void actData() {
             } else {
               Serial.println("End File");
             }
+            prevRec = surpriseMsg.rec;
         }
         if (surpriseMsg.clippedOn != prevClippedOn){
             // rotate servo in this section
+            if (surpriseMsg.clippedOn == true) {
+              Serial.println("Servo Open"); 
+            } else {
+              Serial.println("Servo Close");
+            }
+            prevClippedOn = surpriseMsg.clippedOn;
         }
         newDataReceived = false;
     }
@@ -226,14 +233,22 @@ void moveMotors(int stepRate, int stepNum) {
     if (surpriseMsg.dir == 'L') {
         stepperA.setSpeed(stepRate);
         stepperB.setSpeed(stepRate);
+        while ((stepperB.currentPosition() != stepNum)){// && (stepperA.currentPosition() != stepNum)) {
+          stepperA.runSpeed();
+          stepperB.runSpeed();
+          stepsSinceLastRead = stepsSinceLastRead + 1;
+        }  
     } else if (surpriseMsg.dir == 'R') {
         stepperA.setSpeed(-stepRate);
         stepperB.setSpeed(-stepRate);
-    }
-    
-    while ((stepperA.currentPosition() != stepNum) && (stepperB.currentPosition() != stepNum)) {
+        while ((stepperB.currentPosition() != -stepNum)){// && (stepperA.currentPosition() != -stepNum)) {
           stepperA.runSpeed();
           stepperB.runSpeed();
+          stepsSinceLastRead = stepsSinceLastRead + 1;
         }  
-    stepsSinceLastRead = stepsSinceLastRead + 1;
+    } else {
+        stepperA.setSpeed(0);
+        stepperB.setSpeed(0);
+    }
+    
 }
