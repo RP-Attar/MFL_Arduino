@@ -1,4 +1,5 @@
 // Tx - the master
+// For the Mega
 
 //=========== 
 // Libraries to include
@@ -112,6 +113,7 @@ void setup() {
 void loop() {
     currentMillis = millis();
     actData();
+    showData();
     moveMotors(stepsPerRevolution, stepsPerMove);
     if (currentMillis - prevMillis >= txIntervalMillis) {
         radio.stopListening();

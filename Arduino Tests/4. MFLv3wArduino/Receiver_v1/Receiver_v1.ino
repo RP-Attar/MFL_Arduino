@@ -1,4 +1,5 @@
 // Rx - the slave or the receiver
+// For the Uno
 
 //=========== 
 // Libraries to include
@@ -6,13 +7,6 @@
 #include <nRF24L01.h>
 #include <RF24.h>
 #include <IRremote.h>
-
-//===========
-// IR Remote Setup
-#define RECV_PIN  7
-
-IRrecv irrecv(RECV_PIN);
-decode_results results;
 
 //===========
 // Wireless Comms Setup
@@ -59,9 +53,6 @@ void setup() {
     radio.openReadingPipe(0, addresses[0]); // Opens a pipe to read from
     radio.startListening();
     //radio.printDetails();
-
-    // Start up the IR remote
-    irrecv.enableIRIn(); // Start the receiver
 }
 
 //=============
@@ -69,11 +60,10 @@ void setup() {
 void loop() {
     getData();
     showData();
-    if (irrecv.decode(&results)) {
-      makeSurprise(&results);
-      irrecv.resume();                // Receive the next value
+    if (Serial.available() > 0) {
+      int inByte = Serial.read();
+      makeSurprise(inByte);
       surprise();
-      Serial.println("surprise sent");
     }
 }
 
@@ -108,30 +98,28 @@ void showData() {
 
 //==============
 // Makes a surprise message when called
-void makeSurprise(decode_results *results) {
-    //surpriseMsg.rec = false;
-    //surpriseMsg.clippedOn = true;
+void makeSurprise(int inByte) {
     newDataSend = true;
-    switch (results->value) {
-      case 1386468383:    // Prev btn
+    switch (inByte) {
+      case '>':
         surpriseMsg.dir = 'L';
         break;
-      case 3622325019:    // Next btn
+      case '<':    
         surpriseMsg.dir = 'R';
         break;
-      case 553536955:     // Pause/Play btn
+      case 'S':     
         surpriseMsg.dir = 'S';
         break;
-      case 4034314555:    // Vol -
+      case 'O':  
         surpriseMsg.clippedOn = false;
         break;  
-      case 2747854299:    // Vol +
+      case 'C':    
         surpriseMsg.clippedOn = true;
         break;     
-      case 2534850111:    // 1
+      case '0': 
         surpriseMsg.rec = false;
         break;  
-      case 1635910171:    // 3
+      case '1':  
         surpriseMsg.rec = true;
         break;            
     }
@@ -145,5 +133,6 @@ void surprise() {
       radio.write(&surpriseMsg, sizeof(surpriseMsg));
       newDataSend = false;
       radio.startListening();
+      Serial.println("surprise sent");
     }
 }
