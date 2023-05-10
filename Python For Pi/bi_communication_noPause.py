@@ -32,4 +32,4 @@ try:
 except KeyboardInterrupt: # triggered by <ctrl>+c
     print("Closing serial comms...")
     ser.close()
-        
+dadas

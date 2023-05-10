@@ -6,6 +6,7 @@
 #include <Wire.h>
 #include <Adafruit_ADS1X15.h>
 #include <AccelStepper.h>
+#include <Servo.h>
 
 //=========== 
 // Set up struct to store all the data from the Hall Effect Sensors
@@ -39,8 +40,8 @@ unsigned long prevReadTime = 0;
 // Motor interface type must be set to 1 when using a driver:
 #define stepPinA  33
 #define dirPinA   31
-#define stepPinB  32
-#define dirPinB   30
+//#define stepPinB  32
+//#define dirPinB   30
 #define motorInterfaceType 1
 
 const int stepsPerRevolution = 200;
@@ -51,7 +52,7 @@ int stepsSinceLastRead = 0;
 
 // Create a new instances of the AccelStepper class:
 AccelStepper stepperA = AccelStepper(motorInterfaceType, stepPinA, dirPinA);
-AccelStepper stepperB = AccelStepper(motorInterfaceType, stepPinB, dirPinB);
+//AccelStepper stepperB = AccelStepper(motorInterfaceType, stepPinB, dirPinB);
 
 //===========
 // Timing set up
@@ -59,6 +60,15 @@ unsigned long currentMillis;
 unsigned long prevMillis;
 unsigned long txIntervalMillis = 1000; // send once per second
 
+//===========
+// Servo set up
+Servo gripper;                   // create servo object to control a servo
+
+int pos = 0;                        // variable to store the servo position
+int prevGripperState = 0;   // variable to store what the last action done to gripper was (1 - closed) 
+int currGripperState = 0;   // variable to store what the present action fort gripper is (1 - closed) 
+
+//===========
 void setup() {
     // Start up serial comms
     Serial.begin(115200);
@@ -74,7 +84,10 @@ void setup() {
 
     // Start up the stepper motors with a max RPM
     stepperA.setMaxSpeed(800);                         // Set the maximum speed in steps per second
-    stepperB.setMaxSpeed(800);
+    //stepperB.setMaxSpeed(800);
+
+    // Start up the servo on pin 9
+    gripper.attach(9);  // attaches the servo on pin 9 to the servo object
 }
 
 void loop() {
@@ -93,6 +106,7 @@ void loop() {
         actSurprised(message);
     }
     moveMotors(motorSpeed, stepsPerMove);
+    moveGripper(currGripperState, prevGripperState);
 }
 
 
@@ -102,7 +116,7 @@ void loop() {
 void makeData() {
     readTime = micros();
     hallData.comp1 = ads.readADC_Differential_0_1();
-    hallData.comp2 = random(32000);//ads.readADC_Differential_2_3();;
+    hallData.comp2 = ads.readADC_Differential_2_3();;
     hallData.timeDiff = readTime - prevReadTime;
     hallData.stepDiff = stepsSinceLastRead;
     stepsSinceLastRead = 0;
@@ -134,6 +148,10 @@ void actSurprised(String message) {
         dir = 'R';
     } else if (message == "s") {
         dir = 'S';
+    } else if (message == "o") {
+        currGripperState = 1;
+    } else if (message == "p") {
+        currGripperState = 0;
     }
 }
 
@@ -141,26 +159,38 @@ void actSurprised(String message) {
 // Moves motors by stepsPerMove steps each time it is called
 void moveMotors(int stepRate, int stepNum) {
     stepperA.setCurrentPosition(0);      // Set the current position to 0
-    stepperB.setCurrentPosition(0);      // Set the current position to 0
     
     if (dir == 'L') {
         stepperA.setSpeed(stepRate);
-        stepperB.setSpeed(stepRate);
-        while ((stepperB.currentPosition() != stepNum)) { //&& (stepperA.currentPosition() != stepNum)) {
+        while ((stepperA.currentPosition() != stepNum)) { 
           stepperA.runSpeed();
-          stepperB.runSpeed();
           stepsSinceLastRead = stepsSinceLastRead + 1;
         }  
     } else if (dir == 'R') {
         stepperA.setSpeed(-stepRate);
-        stepperB.setSpeed(-stepRate);
-        while ((stepperB.currentPosition() != -stepNum)) { //&& (stepperA.currentPosition() != -stepNum)) {
+        while ((stepperA.currentPosition() != -stepNum)) { 
           stepperA.runSpeed();
-          stepperB.runSpeed();
           stepsSinceLastRead = stepsSinceLastRead + 1;
         }  
     } else if (dir == 'S') {
         stepperA.setSpeed(0);
-        stepperB.setSpeed(0);
     } 
+}
+
+//==============
+// Moves servo by pos when the states dont match
+void moveGripper(int now, int then) {
+    if ((now == 1) && (then == 0)) {
+        for (pos = 0; pos <= 180; pos += 1) {  // goes from 0 degrees to 180 degrees
+            gripper.write(pos);                           // tell servo to go to position in variable 'pos'
+            delay(1);                                         // waits 15ms for the servo to reach the position
+        }
+        prevGripperState = 1;
+    } else if ((now == 0) && (then == 1)) {
+        for (pos = 180; pos >= 0; pos -= 1) {  // goes from 180 degrees to 0 degrees
+            gripper.write(pos);                          // tell servo to go to position in variable 'pos'
+            delay(1);                                        // waits 15ms for the servo to reach the position
+        }
+        prevGripperState = 0;
+    }
 }
