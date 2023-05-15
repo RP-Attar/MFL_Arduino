@@ -1,4 +1,4 @@
-1.	cd /home/pi/MFL
+1.	cd /home/pi/Desktop/MFL_Arduino
 2.	git add .
 3.	git commit -m “<message>”
-4.	git push https://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@github.com/RP-Attar/<insert repository name>
+4.	git push
