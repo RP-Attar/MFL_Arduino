@@ -6,7 +6,7 @@ from time import sleep
 cc = "hi"
 testNum = 1
 flag = 0
-ser = serial.Serial("/dev/ttyACM0", 115200) # <---- this line needs to be updated/correct for this to work
+ser = serial.Serial("/dev/ttyACM0", 500000) # <---- this line needs to be updated/correct for this to work
 
 def on_press(key):
     global flag
@@ -25,7 +25,7 @@ def writeToFile(filename):
 
     while True:
         cc = str(ser.readline())    # gets the string from the COM port
-        print(cc[2:][:-5] + "\n")
+        #print(cc[2:][:-5] + "\n")
 
         if flag == 1:               # if key 'q' is pressed 
             f.close()               # close file
@@ -35,13 +35,12 @@ def writeToFile(filename):
         f.write(cc[2:][:-5] + "\n") # append to file
 
 listener = keyboard.Listener(on_press=on_press)
+listener.start()
 
 # Continually reading and acting 
 while True:            
-    fileName = input("Enter file name (number will be inserted automatically): ")
-    listener.start()
-    writeToFile(fileName + "_" + str(testNum))
-    listener.stop()
-    testNum = testNum + 1
+    fileName = input("Enter file name: ")
+    writeToFile(fileName)# + "_" + str(testNum))
+    #testNum = testNum + 1
     print("\nData saved, ready to go again...\n")
     
