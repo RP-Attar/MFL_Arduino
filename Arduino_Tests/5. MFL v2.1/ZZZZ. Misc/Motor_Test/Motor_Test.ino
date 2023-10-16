@@ -1,7 +1,7 @@
 #include <AccelStepper.h>
 
-#define stepPinA  33
-#define dirPinA   31
+#define stepPinA  13
+#define dirPinA   6
 #define motorInterfaceType 1
 
 int stepRate = 100;
