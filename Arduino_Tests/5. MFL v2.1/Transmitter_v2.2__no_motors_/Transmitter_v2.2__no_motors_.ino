@@ -10,8 +10,8 @@
 // Set up struct to store all the data from the Hall Effect Sensors
 // Max size of this struct is 32 bytes 
 struct Hall_Data {                              
-  int comp1 = 0;
-  int comp2 = 0;
+  int hall0 = 0;
+  int hall1 = 0;
   int timeDiff = 0;
 };
 
@@ -34,7 +34,7 @@ unsigned long txIntervalMillis = 200; // send 5x per second
 //===========
 void setup() {
     // Start up serial comms
-    Serial.begin(115200);
+    Serial.begin(500000);
     while (!Serial) {}
 
     // Start up the ADC
@@ -63,10 +63,10 @@ void loop() {
 // 'data' is a global struct
 void makeData() {
     readTime = micros();
-    hallData.comp1 = ads.readADC_Differential_0_1();
+    //hallData.comp1 = ads.readADC_Differential_0_1();
     //hallData.comp2 = ads.readADC_Differential_2_3();
-    //hallData.comp1 = ads.readADC_SingleEnded(0);
-    //hallData.comp2 = ads.readADC_SingleEnded(1);
+    hallData.hall0 = ads.readADC_SingleEnded(0);
+    hallData.hall1 = ads.readADC_SingleEnded(1);
     hallData.timeDiff = readTime - prevReadTime;
     prevReadTime = readTime;
 }
@@ -75,18 +75,18 @@ void makeData() {
 // Sends the data made using 'makeData()' by displaying it in the serial monitor 
 // 'data' is a global struct
 void sendDataSlow() {
-    Serial.println("Data sent: ");
-    Serial.print("comp1: ");
-    Serial.println(hallData.comp1);
+    //Serial.println("Data sent: ");
+    //Serial.print("comp1: ");
+    //Serial.println(hallData.comp1);
     //Serial.print("comp2: ");
     //Serial.println(hallData.comp2);
-    Serial.print("timeDiff: ");
-    Serial.println(hallData.timeDiff);
-    Serial.println();
+    //Serial.print("timeDiff: ");
+    //Serial.println(hallData.timeDiff);
+    //Serial.println();
 }
 
 void sendDataFast() {
-    Serial.println(hallData.comp1);
-    //Serial.print(",");
-    //Serial.println(hallData.comp2);
+    Serial.print(hallData.hall0);
+    Serial.print(",");
+    Serial.println(hallData.hall1);
 }
